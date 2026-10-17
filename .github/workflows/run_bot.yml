@@ -1,0 +1,47 @@
+name: Duel V4 Vortex vs Chronos 24/7
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+concurrency:
+  group: quant-duel-v4-lock
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-duel-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Ambil Kode & Checkpoint Terakhir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Identitas Git untuk Live Sync
+        run: |
+          git config --global user.name "QuantBot V4 AutoSave"
+          git config --global user.email "bot@users.noreply.github.com"
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Library
+        run: pip install requests urllib3
+
+      - name: Jalankan Duel V4 (5 Jam Nonstop + Live Sync)
+        run: python3 -u duel_v4_godmode.py
+
+      - name: Push Checkpoint Akhir Sesi ke Repository
+        if: always()
+        run: |
+          git add hasil_duel_v4.txt state_v4_duel.json
+          git commit -m "Final session V4 checkpoint save" || echo "Sudah tersimpan"
+          git pull --rebase -X theirs origin main || true
+          git push origin main
